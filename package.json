@@ -1,6 +1,6 @@
 {
   "name": "dsh-cross-session-approval",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Cross-session task delegation for DeepSeek Harness 0.2.x, with 10 tools, an approval bridge, child-session permission clamping, and base62 session aliases.",
   "engines": {
     "node": ">=18"
