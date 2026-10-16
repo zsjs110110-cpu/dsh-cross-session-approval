@@ -1,4 +1,4 @@
-# dsh-cross-session-approval（0.3.8）
+# dsh-cross-session-approval（0.3.9）
 
 DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），提供 **10 个工具**：创建顶层持久会话、发送任务、回传结果、查询状态与消息、列出会话、批量投递、改名、归档及跨会话审批。
 
@@ -231,6 +231,7 @@ npm pack --dry-run
 
 ## 版本记录
 
+- **0.3.9**：修复「`cross_session_list` 给出的别名有一半解析不到」。`collectSessionIdCandidates` 曾把 `{ cwd }` 当作 signal 传给宿主的 `listSessions(signal?)`——宿主内 `signal?.throwIfAborted()` 会抛 `TypeError`，又被空 `catch` 静默吞掉，于是别名解析的候选集退化成「仅登记表」：凡不是登记 worker / `leadSessionId` 的宿主会话，都无法用别名寻址（`send` / `reply` / `read` / `rename` / `archive` 全部受影响）。现改为与 `cross_session_list` **完全同源**的枚举 + 同一套工作区过滤，并在枚举失败时记录警告而不是静默降级。
 - **0.3.8**：包名由 `dsh-cross-session-2` 改为 `dsh-cross-session-approval`，别名派生盐同步更新。旧 `cs_` 别名失效，请重新调用 `cross_session_list` 获取；真实会话 ID、登记表和会话内容不受影响。
 - **0.3.7**：修复指定不存在的 `agent_preset` 时，错误消息缺少可用列表的问题。
 - **0.3.6**：`cross_session_spawn` 新增可选参数 `agent_preset`，支持指定子会话的自定义模式；默认继承调用者。
