@@ -1,0 +1,9 @@
+node_modules/
+*.log
+*.tmp
+*.bak
+*.bak-*
+
+# 审查/测试脚本与摘要只留本地
+verify-*.mjs
+_digests/

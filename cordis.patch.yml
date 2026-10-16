@@ -1,0 +1,41 @@
+# 将 dsh-cross-session-approval bundle 挂载到 DSH 0.2.x profile 的宿主组合。
+# name 为包名，id 为组合条目标识，对应插件导出的运行时名称。
+# 必需服务通过 Cordis inject 声明；缺少任一必需服务会使插件等待加载。
+#
+# sandboxPolicy / permissionPresets / approval / sessions 在运行时通过
+# ctx.get() 可选获取，不列入 inject。缺失时告警、停用审批桥，并拒绝
+# 启用的 A/F 对应创建路径；其余工具仍可使用。具体边界见 README。
+- insert:
+    - id: cross-session-approval
+      name: 'dsh-cross-session-approval'
+      inject:
+        - tools
+        - agents
+        - sessionPersistence
+        - agentDefaultModel
+        - agentPresets
+        - workspaceRegistry
+        - sessionQuery
+        - sessionTitle
+      config:
+        # 派活登记保存在 <工作区>/<stateDir>/registry.json。
+        stateDir: .cross-session
+        # A：发布前三维权限夹紧。
+        # cap：缺省权限取调用者与部署默认中较严者，工作区按调用者边界校验；失败即拒绝。
+        # 显式 permission 可与调用者同档；最高档调用者不受工作区包含限制。
+        # off：关闭 A，恢复宿主默认创建行为；启用审批桥必须为 cap。
+        spawnPermission: cap
+        # F：派生入口（fork / 恢复）权限夹紧。
+        # cap：活跃源按源当前策略限制；未加载源按部署默认上限，越界或解析失败则拒绝。
+        # strict：活跃源同 cap，未加载源直接拒绝；恢复派生会话也可能失败。
+        # off：关闭 F，不影响 A。
+        forkPermission: cap
+        # 跨会话审批桥：将受支持的提权请求交给活跃的创建者会话。
+        approvalBridge:
+          enabled: true
+          timeoutMs: 300000        # 从处理入口起算的总截止时间，单位为毫秒
+          maxActiveRequests: 64    # 活动请求上限，入口即计数；超限委托本地 UI
+          maxPending: 64           # 已登记待决请求上限；超限在登记前委托本地 UI
+          noticeTextBytes: 32768   # 桥通知文本的字节配额
+          showObservedArgs: advisory  # advisory | off：是否附入口观察值，仅供参考
+          injectWithdraw: true     # 超时、卸载、取消或委托时向活跃创建者注入撤单通知
