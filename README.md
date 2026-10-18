@@ -10,7 +10,23 @@ DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），
 
 需要 Node.js **18 或以上**，以及已配置可用模型的 DeepSeek Harness **0.2.x** profile。宿主 peer 依赖要求为 `>=0.2.0-rc.2 <0.3.0`；具体依赖见 `package.json`。本插件是宿主 bundle，不是独立运行的 MCP 服务。
 
-以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。克隆需要具备该 GitHub 仓库的读取权限。
+以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。插件已发布到 npm（`dsh-cross-session-approval@0.3.10`），安装方式有三种。
+
+**方式一（npm，推荐）**：在目标 profile 目录下安装，npm 会自动解析 `@deepseek-ai/*` peer 依赖（`0.2.0-rc.2` 系）。
+
+```powershell
+$profileDir = Join-Path $HOME ".dsh/profiles/dev"
+cd $profileDir
+npm install dsh-cross-session-approval@0.3.10
+```
+
+**方式二（GitHub Release tarball）**：适用于通过 `dsh plugin` 安装的场景；awesome-dsh-plugin 市场目录也使用此 URL。
+
+```powershell
+dsh plugin --profile dev add "https://github.com/zsjs110110-cpu/dsh-cross-session-approval/releases/latest/download/dsh-cross-session-approval.tgz"
+```
+
+**方式三（源码）**：克隆需要具备该 GitHub 仓库的读取权限。
 
 ```powershell
 $profileName = 'dev'
