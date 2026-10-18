@@ -18,6 +18,25 @@
     "README.md"
   ],
   "license": "MIT",
+  "author": "zsjs110110-cpu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zsjs110110-cpu/dsh-cross-session-approval.git"
+  },
+  "homepage": "https://github.com/zsjs110110-cpu/dsh-cross-session-approval#readme",
+  "bugs": {
+    "url": "https://github.com/zsjs110110-cpu/dsh-cross-session-approval/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "cross-session",
+    "session",
+    "orchestration",
+    "approval",
+    "agent"
+  ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
