@@ -1,4 +1,4 @@
-# dsh-cross-session-approval（0.3.10）
+# dsh-cross-session-approval（0.3.11）
 
 DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），提供 **10 个工具**：创建顶层持久会话、发送任务、回传结果、查询状态与消息、列出会话、批量投递、改名、归档及跨会话审批。
 
@@ -10,14 +10,14 @@ DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），
 
 需要 Node.js **18 或以上**，以及已配置可用模型的 DeepSeek Harness **0.2.x** profile。宿主 peer 依赖要求为 `>=0.2.0-rc.2 <0.3.0`；具体依赖见 `package.json`。本插件是宿主 bundle，不是独立运行的 MCP 服务。
 
-以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。插件已发布到 npm（`dsh-cross-session-approval@0.3.10`），安装方式有三种。
+以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。插件已发布到 npm（`dsh-cross-session-approval@0.3.11`），安装方式有三种。
 
 **方式一（npm，推荐）**：在目标 profile 目录下安装，npm 会自动解析 `@deepseek-ai/*` peer 依赖（`0.2.0-rc.2` 系）。
 
 ```powershell
 $profileDir = Join-Path $HOME ".dsh/profiles/dev"
 cd $profileDir
-npm install dsh-cross-session-approval@0.3.10
+npm install dsh-cross-session-approval@0.3.11
 ```
 
 **方式二（GitHub Release tarball）**：适用于通过 `dsh plugin` 安装的场景；awesome-dsh-plugin 市场目录也使用此 URL。
@@ -222,7 +222,7 @@ subagent 工厂、GUI 新建、普通远程 `session.create`、其他插件的�
 - `cordis.patch.yml` 的 `name` 是包名 `dsh-cross-session-approval`；组合条目 `id: cross-session-approval` 对应插件导出的运行时名称。两者用途不同。
 - 必需服务通过 Cordis `inject` 声明：`tools`、`agents`、`sessionPersistence`、`agentDefaultModel`、`agentPresets`、`workspaceRegistry`、`sessionQuery`、`sessionTitle`。缺少必需服务时，Cordis 可能使插件等待，工具不会完成注册。
 - 四个权限服务 `sandboxPolicy`、`permissionPresets`、`sessions`、`approval` 在运行时可选获取，不列入 `inject`。缺少任一服务会告警、停用桥并拒绝启用的 A/F 对应创建；其余工具仍可使用。`@deepseek-ai/dsh-scope` 导入失败只停用桥并告警，不关闭 A/F 或其他 9 个工具。
-- 投递使用运行时 Agent 的 `steer`、`followup`、`inject` 能力；会话持久化查询使用 `stat(id).header`。agent preset 通过投影与静态 header 解析，创建时写入 `meta.agentPreset`，恢复时优先使用登记的 preset。
+- 投递使用运行时 Agent 的 `steer`、`followup`、`inject` 能力；会话持久化查询使用 `stat(id).header`。agent preset 通过投影与静态 header 解析，创建时写入 `meta.agentPreset`，恢复时优先使用登记的 preset。若 preset 解析/挂载失败，恢复会返回错误并**不投递消息**，不会生成只有插件工具的轻量 Agent；缺少 presetId 时回退 `agentPresets.defaultId`。
 - `package.json` 声明 8 个宿主 peer 依赖；兼容性实现以 DSH 0.2.0-rc.2 为基准，其他 0.2.x 版本仍需验证服务契约。
 
 | 路径 | 用途 |
@@ -247,6 +247,7 @@ npm pack --dry-run
 
 ## 版本记录
 
+- **0.3.11**：修复冷恢复/创建时 agent preset 挂载失败被静默吞掉的问题。`installPreset` 不再返回 `undefined` 后继续组合：presetId 缺失时回退宿主 `agentPresets.defaultId`（旧版服务由 `mount()` 使用默认语义），请求的 preset 失败时尝试默认 preset；默认 preset 也失败或 `agentPresets` 服务缺失时抛错，`cross_session_send` 返回错误并**不投递消息**。对应 issue #1。
 - **0.3.10**：补齐 0.3.9 **没修完**的那一半——0.3.9 把候选集的 cwd 比较写成 `normalizeCwd(header.cwd) !== cwd`，但 `send` / `reply` / `read` / `rename` / `archive` 传进来的是**未归一化的裸 `workspaceOf()`**，而 `normalizeCwd` 在 Windows 下会把路径小写化 ⇒ 比较恒不相等、候选集仍为空（症状：`status` 好了、`read`/`send` 照旧"找不到该别名"）。现在把归一化**收口到 `collectSessionIdCandidates` 入口**（`const root = normalizeCwd(cwd)`），8 个调用点一次覆盖。
 - **0.3.9**：修复「`cross_session_list` 给出的别名有一半解析不到」。`collectSessionIdCandidates` 曾把 `{ cwd }` 当作 signal 传给宿主的 `listSessions(signal?)`——宿主内 `signal?.throwIfAborted()` 会抛 `TypeError`，又被空 `catch` 静默吞掉，于是别名解析的候选集退化成「仅登记表」：凡不是登记 worker / `leadSessionId` 的宿主会话，都无法用别名寻址（`send` / `reply` / `read` / `rename` / `archive` 全部受影响）。现改为与 `cross_session_list` **完全同源**的枚举 + 同一套工作区过滤，并在枚举失败时记录警告而不是静默降级。
 - **0.3.8**：包名由 `dsh-cross-session-2` 改为 `dsh-cross-session-approval`，别名派生盐同步更新。旧 `cs_` 别名失效，请重新调用 `cross_session_list` 获取；真实会话 ID、登记表和会话内容不受影响。
