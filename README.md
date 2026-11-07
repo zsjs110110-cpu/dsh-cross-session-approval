@@ -1,4 +1,4 @@
-# dsh-cross-session-approval（0.3.11）
+# dsh-cross-session-approval（0.3.12）
 
 DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），提供 **10 个工具**：创建顶层持久会话、发送任务、回传结果、查询状态与消息、列出会话、批量投递、改名、归档及跨会话审批。
 
@@ -10,14 +10,14 @@ DeepSeek Harness（DSH）**0.2.x** 的跨会话任务派发插件（bundle），
 
 需要 Node.js **18 或以上**，以及已配置可用模型的 DeepSeek Harness **0.2.x** profile。宿主 peer 依赖要求为 `>=0.2.0-rc.2 <0.3.0`；具体依赖见 `package.json`。本插件是宿主 bundle，不是独立运行的 MCP 服务。
 
-以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。插件已发布到 npm（`dsh-cross-session-approval@0.3.11`），安装方式有三种。
+以下以名为 `dev` 的 profile 为例；请替换为实际 profile 名。插件已发布到 npm（`dsh-cross-session-approval@0.3.12`），安装方式有三种。
 
 **方式一（npm，推荐）**：在目标 profile 目录下安装，npm 会自动解析 `@deepseek-ai/*` peer 依赖（`0.2.0-rc.2` 系）。
 
 ```powershell
 $profileDir = Join-Path $HOME ".dsh/profiles/dev"
 cd $profileDir
-npm install dsh-cross-session-approval@0.3.11
+npm install dsh-cross-session-approval@0.3.12
 ```
 
 **方式二（GitHub Release tarball）**：适用于通过 `dsh plugin` 安装的场景；awesome-dsh-plugin 市场目录也使用此 URL。
@@ -247,6 +247,7 @@ npm pack --dry-run
 
 ## 版本记录
 
+- **0.3.12**：修复 DSH 0.2.2-rc.1 下 `cross_session_spawn` 报 `cannot append before session/created completes` 的问题（issue #3）。根因：宿主在 `session/created` 同步广播期间把 Session 设为只读（`announcement !== "complete"` 时 `append` 被拒），而本插件原先在 `session/created` 监听器内同步 `append` 权限事件，第一条即被拒。修复分两支：①**spawn**——监听器只绑定会话实例不再 append，`agents.create` 返回后（广播已完成）再执行 `clampAfterCreation` 夹紧，对明确的时序错误做有限重试；②**fork**——同样走 `agents.create` 触发同一广播，原先同步 `clampDerivedPermission` 也会撞只读窗口。现在 `strict` 模式保留同步预检（源未加载 ⇒ 广播失败 ⇒ fork 被拒），`cap` 模式把派生夹紧推迟到广播结束后的微任务，失败则把会话隔离为最严档位（`never`/`read-only`，fail-closed 而非只告警）。
 - **0.3.11**：修复冷恢复/创建时 agent preset 挂载失败被静默吞掉的问题。`installPreset` 不再返回 `undefined` 后继续组合：presetId 缺失时回退宿主 `agentPresets.defaultId`（旧版服务由 `mount()` 使用默认语义），请求的 preset 失败时尝试默认 preset；默认 preset 也失败或 `agentPresets` 服务缺失时抛错，`cross_session_send` 返回错误并**不投递消息**。对应 issue #1。
 - **0.3.10**：补齐 0.3.9 **没修完**的那一半——0.3.9 把候选集的 cwd 比较写成 `normalizeCwd(header.cwd) !== cwd`，但 `send` / `reply` / `read` / `rename` / `archive` 传进来的是**未归一化的裸 `workspaceOf()`**，而 `normalizeCwd` 在 Windows 下会把路径小写化 ⇒ 比较恒不相等、候选集仍为空（症状：`status` 好了、`read`/`send` 照旧"找不到该别名"）。现在把归一化**收口到 `collectSessionIdCandidates` 入口**（`const root = normalizeCwd(cwd)`），8 个调用点一次覆盖。
 - **0.3.9**：修复「`cross_session_list` 给出的别名有一半解析不到」。`collectSessionIdCandidates` 曾把 `{ cwd }` 当作 signal 传给宿主的 `listSessions(signal?)`——宿主内 `signal?.throwIfAborted()` 会抛 `TypeError`，又被空 `catch` 静默吞掉，于是别名解析的候选集退化成「仅登记表」：凡不是登记 worker / `leadSessionId` 的宿主会话，都无法用别名寻址（`send` / `reply` / `read` / `rename` / `archive` 全部受影响）。现改为与 `cross_session_list` **完全同源**的枚举 + 同一套工作区过滤，并在枚举失败时记录警告而不是静默降级。
